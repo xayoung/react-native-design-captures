@@ -9,15 +9,28 @@ import {
   AppRegistry,
   StyleSheet,
   Text,
-  View
+  View,
+    Navigator,
+    ScrollView
 } from 'react-native';
 
 var ShotList = require("./comment/ShotList");
+var ScrollableView = require("./comment/Scrollable");
 
 class Designer extends Component {
   render() {
     return (
-        <ShotList/>
+        <Navigator
+            tabLabel="ios-paper"
+            initialRoute={{name:'首页',component:ScrollableView}}
+            configureScene={()=>{
+              return Navigator.SceneConfigs.PushFromRight;
+            }}
+            renderScene={(route,navigator)=>{
+              let Component = route.component;
+              return <Component {...route.passProps} navigator={navigator}/>;
+            }}
+        />
     );
   }
 }

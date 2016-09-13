@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 var GiftedListView = require('react-native-gifted-listview');
-var GiftedSpinner = require('react-native-gifted-spinner');
+// var GiftedSpinner = require('react-native-gifted-spinner');
 
 var getImage = require("./getImage");
 
@@ -66,6 +66,8 @@ var ShotList = React.createClass({
 
 
     _onFetch(page = 1, callback, options) {
+
+        console.log(options)
         this.setState({ queryNumber: this.state.queryNumber + 1 });
         console.log(this.state.queryNumber)
         var query = this.state.filter;
@@ -108,7 +110,9 @@ var ShotList = React.createClass({
     _renderRowView(rowData) {
         return (
             <TouchableOpacity onPress={()=>{this.pushToDetail(rowData)}}>
-                <View style={styles.cellViewStyle}>
+                <View
+                    key={rowData.views_count}
+                    style={styles.cellViewStyle}>
                     {/*左边*/}
                     <Image  source={getImage.shotImage(rowData)} style={styles.imgStyle}/>
                 </View>
@@ -116,19 +120,7 @@ var ShotList = React.createClass({
         );
     },
 
-    /**
-     * Render a row
-     * @param {object} rowData Row data
-     */
-    _renderSectionHeaderView(sectionData, sectionID) {
-        return (
-            <View style={customStyles.header}>
-                <Text style={customStyles.headerTitle}>
-                    {sectionID}
-                </Text>
-            </View>
-        );
-    },
+
 
     /**
      * Render the refreshable view when waiting for refresh
@@ -136,6 +128,7 @@ var ShotList = React.createClass({
      * @param {function} refreshCallback The function to call to refresh the listview
      */
     _renderRefreshableWaitingView(refreshCallback) {
+        this.setState({ queryNumber: 0 })
         if (Platform.OS !== 'android') {
             return (
                 <View style={customStyles.refreshableView}>
@@ -177,41 +170,15 @@ var ShotList = React.createClass({
      * Render the refreshable view when fetching
      */
     _renderRefreshableFetchingView() {
+        console.log('0000111')
         return (
+
             <View style={customStyles.refreshableView}>
                 <GiftedSpinner />
             </View>
         );
     },
 
-    /**
-     * Render the pagination view when waiting for touch
-     * @param {function} paginateCallback The function to call to load more rows
-     */
-    _renderPaginationWaitingView(paginateCallback) {
-        return (
-            <TouchableHighlight
-                underlayColor='#c8c7cc'
-                onPress={paginateCallback}
-                style={customStyles.paginationView}
-            >
-                <Text style={[customStyles.actionsLabel, {fontSize: 13}]}>
-                    Load more
-                </Text>
-            </TouchableHighlight>
-        );
-    },
-
-    /**
-     * Render the pagination view when fetching
-     */
-    _renderPaginationFetchigView() {
-        return (
-            <View style={customStyles.paginationView}>
-                <GiftedSpinner />
-            </View>
-        );
-    },
 
     /**
      * Render the pagination view when end of list is reached
@@ -286,7 +253,7 @@ var ShotList = React.createClass({
                     renderSeparator={this._renderSeparatorView}
 
                     withSections={false} // enable sections
-                    sectionHeaderView={this._renderSectionHeaderView}
+
 
                     PullToRefreshViewAndroidProps={{
             colors: ['#fff'],
