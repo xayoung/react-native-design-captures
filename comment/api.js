@@ -15,7 +15,7 @@ module.exports = {
   getShotsByType(type, pageNumber){
     var URL = API_URL + "shots/?list=" + type;
     if (pageNumber) {
-      URL += "&per_page=4&page=" + pageNumber;
+      URL += "&per_page=10&page=" + pageNumber;
     }
     console.log(URL);
     return fetchData(URL);

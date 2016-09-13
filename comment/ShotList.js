@@ -11,10 +11,13 @@ import {
     Switch,
     ListView,
     TouchableOpacity,
+    TouchableHighlight,
     Dimensions
 } from 'react-native';
 
-import AnimatedSegmentedControl from 'react-native-animated-segmented-control';
+var GiftedListView = require('react-native-gifted-listview');
+var GiftedSpinner = require('react-native-gifted-spinner');
+
 var getImage = require("./getImage");
 
 //请求api
@@ -40,99 +43,10 @@ var ShotList = React.createClass({
     //状态机,datasource
     getInitialState(){
         return {
-            dataSource: new ListView.DataSource({
-                rowHasChanged: (r1, r2) => r1 !== r2,
-            }),
+
             filter: this.props.filter,
             queryNumber: 0,
-            items: [
-                { label: 'Item1', checked: true },
-                { label: 'Item2', checked: true },
-                { label: 'Item3', checked: true },
-                { label: 'Item4', checked: true },
-                { label: 'Item5', checked: true },
-                { label: 'Item6', checked: true },
-            ]
         };
-    },
-
-    componentWillMount() {
-        this.getShots(this.state.filter);
-    },
-
-    //网络请求
-    getShots(query){
-        var cachedResultsForQuery = resultsCache.dataForQuery[query];
-
-        this.setState({
-            isLoading: true,
-            queryNumber: this.state.queryNumber + 1,
-            isLoadingTail: false,
-        });
-
-        console.log(query);
-        api.getShotsByType(query, 1)
-            .then((responseData) => {
-                // LOADING[query] = false;
-                console.log( "请求" + responseData);
-                resultsCache.dataForQuery[query] = responseData;
-                resultsCache.nextPageNumberForQuery[query] = 2;
-                // this.getDataSource(responseData);
-
-                this.setState({
-
-                    dataSource: this.getDataSource(responseData),
-                });
-            })
-
-            .catch((error) => {
-                // LOADING[query] = false;
-
-                // resultsCache.dataForQuery[query] = undefined;
-                //
-                // this.setState({
-                //     dataSource: this.getDataSource([]),
-                // });
-            })
-
-    },
-
-    //获取数据源
-    getDataSource(shots){
-        return this.state.dataSource.cloneWithRows(shots);
-
-        // // 定义临时变量
-        // var headerArr = [], listDataArr = [];
-        // // 遍历拿到的json数据
-        // for(var i=0; i<shots.length; i++){
-        //     // 取出单独的对象
-        //     var data = shots[i];
-        //     console.log(data);
-        //     listDataArr.push(data);
-        //
-        // }
-        //
-        // // 更新状态机
-        // this.setState({
-        //     // ListView头部的数据源
-        //     headerDataArr: headerArr,
-        //     // cell的数据源
-        //     dataSource: this.state.dataSource.cloneWithRows(listDataArr)
-        // });
-
-    },
-
-    renderRow(rowData){
-        console.log(rowData);
-        return(
-        <TouchableOpacity onPress={()=>{this.pushToDetail(rowData)}}>
-            <View style={styles.cellViewStyle}>
-                {/*左边*/}
-                <Image  source={getImage.shotImage(rowData)} style={styles.imgStyle}/>
-            </View>
-        </TouchableOpacity>
-
-        );
     },
 
     // 跳转到二级界面
@@ -148,109 +62,311 @@ var ShotList = React.createClass({
         );
     },
 
-    hasMore() {
+
+
+
+    _onFetch(page = 1, callback, options) {
+        this.setState({ queryNumber: this.state.queryNumber + 1 });
+        console.log(this.state.queryNumber)
         var query = this.state.filter;
-        if (!resultsCache.dataForQuery[query]) {
-            return true;
-        }
+        setTimeout(() => {
+            var header = 'Header '+page;
+            var rows = {};
+
+            api.getShotsByType(query,this.state.queryNumber)
+                .catch((error) => {
+
+                })
+                .then((responseData) => {
+                    callback(responseData);
+                    console.log(responseData)
+                })
+                .done();
+
+
+        }, 1000); // simulating network fetching
+    },
+
+    _onEndReached(){
+        console.log('底部')
+        this.refs.glistView._onPaginate()
+    },
+
+
+    /**
+     * When a row is touched
+     * @param {object} rowData Row data
+     */
+    _onPress(rowData) {
+        console.log(rowData+' pressed');
+    },
+
+    /**
+     * Render a row
+     * @param {object} rowData Row data
+     */
+    _renderRowView(rowData) {
         return (
-            resultsCache.totalForQuery[query] !==
-            resultsCache.dataForQuery[query].length
+            <TouchableOpacity onPress={()=>{this.pushToDetail(rowData)}}>
+                <View style={styles.cellViewStyle}>
+                    {/*左边*/}
+                    <Image  source={getImage.shotImage(rowData)} style={styles.imgStyle}/>
+                </View>
+            </TouchableOpacity>
         );
     },
 
-    onEndReached() {
-        var query = this.state.filter;
-        if (!this.hasMore() || this.state.isLoadingTail) {
-            // We"re already fetching or have all the elements so noop
-            return;
+    /**
+     * Render a row
+     * @param {object} rowData Row data
+     */
+    _renderSectionHeaderView(sectionData, sectionID) {
+        return (
+            <View style={customStyles.header}>
+                <Text style={customStyles.headerTitle}>
+                    {sectionID}
+                </Text>
+            </View>
+        );
+    },
+
+    /**
+     * Render the refreshable view when waiting for refresh
+     * On Android, the view should be touchable to trigger the refreshCallback
+     * @param {function} refreshCallback The function to call to refresh the listview
+     */
+    _renderRefreshableWaitingView(refreshCallback) {
+        if (Platform.OS !== 'android') {
+            return (
+                <View style={customStyles.refreshableView}>
+                    <Text style={customStyles.actionsLabel}>
+                        ↓
+                    </Text>
+                </View>
+            );
+        } else {
+            return (
+                <TouchableHighlight
+                    underlayColor='#c8c7cc'
+                    onPress={refreshCallback}
+                    style={customStyles.refreshableView}
+                >
+                    <Text style={customStyles.actionsLabel}>
+                        ↻
+                    </Text>
+                </TouchableHighlight>
+            );
         }
+    },
 
+    /**
+     * Render the refreshable view when the pull to refresh has been activated
+     * @platform ios
+     */
+    _renderRefreshableWillRefreshView() {
+        return (
+            <View style={customStyles.refreshableView}>
+                <Text style={customStyles.actionsLabel}>
+                    ↻
+                </Text>
+            </View>
+        );
+    },
 
+    /**
+     * Render the refreshable view when fetching
+     */
+    _renderRefreshableFetchingView() {
+        return (
+            <View style={customStyles.refreshableView}>
+                <GiftedSpinner />
+            </View>
+        );
+    },
 
-        this.setState({
-            queryNumber: this.state.queryNumber + 1,
+    /**
+     * Render the pagination view when waiting for touch
+     * @param {function} paginateCallback The function to call to load more rows
+     */
+    _renderPaginationWaitingView(paginateCallback) {
+        return (
+            <TouchableHighlight
+                underlayColor='#c8c7cc'
+                onPress={paginateCallback}
+                style={customStyles.paginationView}
+            >
+                <Text style={[customStyles.actionsLabel, {fontSize: 13}]}>
+                    Load more
+                </Text>
+            </TouchableHighlight>
+        );
+    },
 
-        });
+    /**
+     * Render the pagination view when fetching
+     */
+    _renderPaginationFetchigView() {
+        return (
+            <View style={customStyles.paginationView}>
+                <GiftedSpinner />
+            </View>
+        );
+    },
 
-        var page = resultsCache.nextPageNumberForQuery[query];
-        api.getShotsByType(query, page)
-            .catch((error) => {
+    /**
+     * Render the pagination view when end of list is reached
+     */
+    _renderPaginationAllLoadedView() {
+        return (
+            <View style={customStyles.paginationView}>
+                <Text style={customStyles.actionsLabel}>
+                    ~
+                </Text>
+            </View>
+        );
+    },
 
-            })
-            .then((responseData) => {
-                var shotsForQuery = resultsCache.dataForQuery[query].slice();
+    /**
+     * Render a view when there is no row to display at the first fetch
+     * @param {function} refreshCallback The function to call to refresh the listview
+     */
+    _renderEmptyView(refreshCallback) {
+        return (
+            <View style={customStyles.defaultView}>
+                <Text style={customStyles.defaultViewTitle}>
+                    Sorry, there is no content to display
+                </Text>
 
+                <TouchableHighlight
+                    underlayColor='#c8c7cc'
+                    onPress={refreshCallback}
+                >
+                    <Text>
+                        ↻
+                    </Text>
+                </TouchableHighlight>
+            </View>
+        );
+    },
 
-                // We reached the end of the list before the expected number of results
-                if (!responseData) {
-                    resultsCache.totalForQuery[query] = shotsForQuery.length;
-                } else {
-                    for (var i in responseData) {
-                        shotsForQuery.push(responseData[i]);
-                    }
-                    resultsCache.dataForQuery[query] = shotsForQuery;
-                    resultsCache.nextPageNumberForQuery[query] += 1;
-                }
-
-                this.setState({
-
-                    dataSource: this.getDataSource(resultsCache.dataForQuery[query]),
-                });
-            })
-            .done();
+    /**
+     * Render a separator between rows
+     */
+    _renderSeparatorView() {
+        return (
+            <View style={customStyles.separator} />
+        );
     },
 
 
     render(){
-        const { items } = this.state;
 
-        const switches = items.map((item, idx) => (
-            <View key={idx} style={styles.switch}>
-                <Text>{item.label}</Text>
-                <Switch
-                    value={item.checked}
-                    onValueChange={(val) => {
-                        item.checked = val;
-                        this.setState({ items });
-                    }}
+        return (
+            <View style={screenStyles.container}>
+                <GiftedListView
+                    ref= 'glistView'
+                    rowView={this._renderRowView}
+
+                    onFetch={this._onFetch}
+                    initialListSize={10} // the maximum number of rows displayable without scrolling (height of the listview / height of row)
+
+                    firstLoader={true} // display a loader for the first fetching
+                    onEndReached={this._onEndReached}
+                    pagination={false} // enable infinite scrolling using touch to load more
+
+                    refreshable={true} // enable pull-to-refresh for iOS and touch-to-refresh for Android
+                    refreshableViewHeight={50} // correct height is mandatory
+                    refreshableDistance={40} // the distance to trigger the pull-to-refresh - better to have it lower than refreshableViewHeight
+                    refreshableFetchingView={this._renderRefreshableFetchingView}
+                    refreshableWillRefreshView={this._renderRefreshableWillRefreshView}
+                    refreshableWaitingView={this._renderRefreshableWaitingView}
+
+                    emptyView={this._renderEmptyView}
+
+                    renderSeparator={this._renderSeparatorView}
+
+                    withSections={false} // enable sections
+                    sectionHeaderView={this._renderSectionHeaderView}
+
+                    PullToRefreshViewAndroidProps={{
+            colors: ['#fff'],
+            progressBackgroundColor: '#003e82',
+          }}
+
+                    rowHasChanged={(r1,r2)=>{
+            r1.id !== r2.id
+          }}
                 />
             </View>
-        ));
-        return(
-            <View style={styles.mainViewStyle}>
-                <View style={styles.container}>
-                    <AnimatedSegmentedControl
-                        style={styles.control}
-                        borderWidth={1}
-                        borderRadius={20}
-                        borderColor="rgba(229,163,48,1)"
-                        backgroundColor="rgba(229,163,48,1)"
-                        textColor="#fff"
-                        textPadding={10}
-                        selectedBackgroundColor="#fff"
-                        selectedTextColor="rgba(229,163,48,1)"
-                        values={items.filter((item) => item.checked).map((item) => item.label)}
-                    />
-                    {switches}
-                </View>
-
-
-                <ListView
-                    dataSource={this.state.dataSource}
-                    renderRow={this.renderRow}
-                    onEndReached={this.onEndReached}
-                    automaticallyAdjustContentInsets={false}
-                    keyboardDismissMode="on-drag"
-                    keyboardShouldPersistTaps={true}
-                    showsVerticalScrollIndicator={false}
-                />
-            </View>
-
         );
     },
 
 });
+
+
+var customStyles = {
+    separator: {
+        height: 1,
+        backgroundColor: '#CCC'
+    },
+    refreshableView: {
+        height: 50,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    actionsLabel: {
+        fontSize: 20,
+        color: '#007aff',
+    },
+    paginationView: {
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+    },
+    defaultView: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    defaultViewTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
+    row: {
+        padding: 10,
+        height: 44,
+    },
+    header: {
+        backgroundColor: '#50a4ff',
+        padding: 10,
+    },
+    headerTitle: {
+        color: '#fff',
+    },
+};
+
+
+var screenStyles = {
+    container: {
+        flex: 1,
+        backgroundColor: '#FFF',
+    },
+    navBar: {
+        height: 64,
+        backgroundColor: '#007aff',
+
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    navBarTitle: {
+        color: '#fff',
+        fontSize: 16,
+        marginTop: 12,
+    }
+};
 
 const styles = StyleSheet.create({
     mainViewStyle:{
