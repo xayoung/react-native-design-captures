@@ -7,43 +7,36 @@ import {
     StyleSheet,
     Text,
     View,
-    Image,
     Switch,
-    ListView,
     TouchableOpacity,
     TouchableHighlight,
-    Dimensions
+    Dimensions,
+    ScrollView,
+    TouchableWithoutFeedback
 } from 'react-native';
 
 var GiftedListView = require('react-native-gifted-listview');
-// var GiftedSpinner = require('react-native-gifted-spinner');
+import Image from 'react-native-image-progress';
+import { RadioButtons } from 'react-native-radio-buttons'
 
-var getImage = require("./getImage");
+var getImage = require("./../getImage");
 
 //请求api
-var api = require("./api"),
+var api = require("./../api"),
     ShotCell = require("./ShotCell"),
     ShotDetails = require("./ShotDetails"),
     screen = Dimensions.get('window');
-//网络请求相关
-var resultsCache = {
-    dataForQuery: [],
-    nextPageNumberForQuery: [],
-    totalForQuery: [],
-};
 
 var ShotList = React.createClass({
     //初始化参数
     getDefaultProps(){
         return {
-            filter: "default"
+            filter: "default",
         };
     },
-
     //状态机,datasource
     getInitialState(){
         return {
-
             filter: this.props.filter,
             queryNumber: 0,
         };
@@ -51,7 +44,7 @@ var ShotList = React.createClass({
 
     // 跳转到二级界面
     pushToDetail(shot){
-        console.log(shot.title);
+
         this.props.navigator.push(
             {
                 component: ShotDetails, // 要跳转的版块
@@ -63,25 +56,18 @@ var ShotList = React.createClass({
     },
 
 
-
-
     _onFetch(page = 1, callback, options) {
 
-        console.log(options)
-        this.setState({ queryNumber: this.state.queryNumber + 1 });
-        console.log(this.state.queryNumber)
+        this.setState({ queryNumber: page });
         var query = this.state.filter;
         setTimeout(() => {
-            var header = 'Header '+page;
-            var rows = {};
-
             api.getShotsByType(query,this.state.queryNumber)
                 .catch((error) => {
 
                 })
                 .then((responseData) => {
-                    callback(responseData);
                     console.log(responseData)
+                    callback(responseData);
                 })
                 .done();
 
@@ -90,8 +76,8 @@ var ShotList = React.createClass({
     },
 
     _onEndReached(){
-        console.log('底部')
-        this.refs.glistView._onPaginate()
+
+        this.refs.listView._onPaginate()
     },
 
 
@@ -107,14 +93,24 @@ var ShotList = React.createClass({
      * Render a row
      * @param {object} rowData Row data
      */
-    _renderRowView(rowData) {
+    _renderRowView(rowData,sectionID,rowID) {
         return (
-            <TouchableOpacity onPress={()=>{this.pushToDetail(rowData)}}>
+            <TouchableOpacity key={"sectionID_"+sectionID+"_rowID_"+rowID} onPress={()=>{this.pushToDetail(rowData)}}>
                 <View
-                    key={rowData.views_count}
                     style={styles.cellViewStyle}>
-                    {/*左边*/}
-                    <Image  source={getImage.shotImage(rowData)} style={styles.imgStyle}/>
+                    {/*<Image*/}
+                        {/*source={getImage.shotImage(rowData)}*/}
+                        {/*style={styles.imgStyle}*/}
+                    {/*/>*/}
+                    {/*indicator={Progress.CircleSnail}*/}
+                    {/*indicatorProps={{*/}
+                    {/*color: ['red', 'green', 'blue']*/}
+                    {/*}}*/}
+                    <Image
+                        source={getImage.shotImage(rowData)}
+
+                        style={styles.imgStyle}
+                    />
                 </View>
             </TouchableOpacity>
         );
@@ -170,7 +166,7 @@ var ShotList = React.createClass({
      * Render the refreshable view when fetching
      */
     _renderRefreshableFetchingView() {
-        console.log('0000111')
+
         return (
 
             <View style={customStyles.refreshableView}>
@@ -219,52 +215,118 @@ var ShotList = React.createClass({
     /**
      * Render a separator between rows
      */
-    _renderSeparatorView() {
+    _renderSeparatorView(sectionID, rowID, adjacentRowHighlighted) {
         return (
-            <View style={customStyles.separator} />
+            <View key={sectionID + rowID} style={customStyles.separator} />
         );
+    },
+
+    renderOption(option, selected, onSelect, index){
+    const style = selected ? { marginLeft:3,marginBottom:3, marginRight:3,overflow: 'hidden',borderWidth: 1, borderColor: '#2d4486',borderRadius: 12,padding: 3,backgroundColor:'#2d4486',marginTop: 5} : {marginTop: 5,marginLeft:3,marginBottom:3, marginRight:3,padding: 3};
+    const textStyle = selected ? { textAlign: 'center',color:'white'} : {color:'#666666',textAlign: 'center'};
+
+        return (
+            <TouchableOpacity onPress={onSelect} key={index}>
+                <View style={style}>
+                    <Text style={textStyle}>{option}</Text>
+                </View>
+
+            </TouchableOpacity>
+    );
+
+    },
+
+    setSelectedOption(selectedOption){
+        // 设置tag
+        this.setState({
+            selectedOption
+         });
+        this.refs.listView._scrollToTop();
+        this.setState({filter: selectedOption}, () => {
+            console.log(this.state.filter);
+            this.refs.listView._refresh();
+        });
+
     },
 
 
     render(){
 
+        const options = [
+            "shots",
+            "debuts",
+            "teams",
+            "playoffs",
+            "rebounds",
+            "animated",
+            "attachments",
+        ];
+
+
+
+        function renderContainer(optionNodes){
+            return <View style={{flexDirection: 'row'}}>{optionNodes}</View>;
+        }
+
         return (
-            <View style={screenStyles.container}>
-                <GiftedListView
-                    ref= 'glistView'
-                    rowView={this._renderRowView}
-
-                    onFetch={this._onFetch}
-                    initialListSize={10} // the maximum number of rows displayable without scrolling (height of the listview / height of row)
-
-                    firstLoader={true} // display a loader for the first fetching
-                    onEndReached={this._onEndReached}
-                    pagination={false} // enable infinite scrolling using touch to load more
-
-                    refreshable={true} // enable pull-to-refresh for iOS and touch-to-refresh for Android
-                    refreshableViewHeight={50} // correct height is mandatory
-                    refreshableDistance={40} // the distance to trigger the pull-to-refresh - better to have it lower than refreshableViewHeight
-                    refreshableFetchingView={this._renderRefreshableFetchingView}
-                    refreshableWillRefreshView={this._renderRefreshableWillRefreshView}
-                    refreshableWaitingView={this._renderRefreshableWaitingView}
-
-                    emptyView={this._renderEmptyView}
-
-                    renderSeparator={this._renderSeparatorView}
-
-                    withSections={false} // enable sections
 
 
-                    PullToRefreshViewAndroidProps={{
-            colors: ['#fff'],
-            progressBackgroundColor: '#003e82',
-          }}
+                <View style={screenStyles.container}>
 
-                    rowHasChanged={(r1,r2)=>{
-            r1.id !== r2.id
-          }}
-                />
-            </View>
+                    <ScrollView
+                        ref='ScrollView'
+                        automaticallyAdjustContentInsets={true}
+                        horizontal={true}
+                        showsHorizontalScrollIndicator={false}
+                        style={{height: 35}}>
+                        <RadioButtons
+                            style={{flexDirection: 'row',height: 35,padding: 10}}
+                            options={ options }
+                            selectedIndex={0}
+                            onSelection={ this.setSelectedOption}
+                            selectedOption={this.state.selectedOption }
+                            renderOption={ this.renderOption }
+                            renderContainer={renderContainer}
+                        />
+                    </ScrollView>
+
+                        <GiftedListView
+                            style={{height: screen.height-35}}
+                            ref= 'listView'
+                            rowView={this._renderRowView}
+                            onFetch={this._onFetch}
+                            initialListSize={10} // the maximum number of rows displayable without scrolling (height of the listview / height of row)
+                            //headerView={this._renderHeaderView}
+                            firstLoader={true} // display a loader for the first fetching
+                            onEndReached={this._onEndReached}
+                            pagination={false} // enable infinite scrolling using touch to load more
+                            refreshable={true} // enable pull-to-refresh for iOS and touch-to-refresh for Android
+                            refreshableViewHeight={50} // correct height is mandatory
+                            refreshableDistance={40} // the distance to trigger the pull-to-refresh - better to have it lower than refreshableViewHeight
+                            refreshableFetchingView={this._renderRefreshableFetchingView}
+                            refreshableWillRefreshView={this._renderRefreshableWillRefreshView}
+                            refreshableWaitingView={this._renderRefreshableWaitingView}
+
+                            emptyView={this._renderEmptyView}
+
+                            renderSeparator={this._renderSeparatorView}
+
+                            withSections={false} // enable sections
+                            enableEmptySections={true}
+
+
+                            PullToRefreshViewAndroidProps={{
+                                colors: ['#fff'],
+                                progressBackgroundColor: '#003e82',
+                            }}
+                            rowHasChanged={(r1,r2)=>{
+                                r1.id !== r2.id
+                            }}
+                        />
+
+
+                </View>
+
         );
     },
 
@@ -272,6 +334,7 @@ var ShotList = React.createClass({
 
 
 var customStyles = {
+
     separator: {
         height: 1,
         backgroundColor: '#CCC'
@@ -338,6 +401,12 @@ var screenStyles = {
 const styles = StyleSheet.create({
     mainViewStyle:{
         flex: 1
+    },
+    scrollView:{
+        height: 30
+    },
+    horizontalScrollView: {
+        height: 40,
     },
 
     cellViewStyle:{

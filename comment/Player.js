@@ -19,8 +19,8 @@ var Icon = require("react-native-vector-icons/FontAwesome"),
 
 var api = require("./api");
 
-var ShotDetails = require("./ShotDetails");
-var ShotCell = require("./ShotCell");
+var ShotDetails = require("./Dribbble/ShotDetails");
+var ShotCell = require("./Dribbble/ShotCell");
 var Loading = require("./Loading");
 
 var Player = React.createClass({

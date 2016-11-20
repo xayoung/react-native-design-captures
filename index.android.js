@@ -14,21 +14,19 @@ import {
     ScrollView
 } from 'react-native';
 
-var ShotList = require("./comment/ShotList");
 var ScrollableView = require("./comment/Scrollable");
-
 class Designer extends Component {
   render() {
     return (
+
         <Navigator
-            tabLabel="ios-paper"
-            initialRoute={{name:'首页',component:ScrollableView}}
+            initialRoute={{component:ScrollableView}}
             configureScene={()=>{
-              return Navigator.SceneConfigs.PushFromRight;
+                return Navigator.SceneConfigs.PushFromRight;
             }}
             renderScene={(route,navigator)=>{
-              let Component = route.component;
-              return <Component {...route.passProps} navigator={navigator}/>;
+                let Component = route.component;
+                return <Component {...route.passProps} navigator={navigator}/>;
             }}
         />
     );
@@ -36,6 +34,11 @@ class Designer extends Component {
 }
 
 const styles = StyleSheet.create({
+    tabView: {
+        flex: 1,
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.01)',
+    },
 
 });
 

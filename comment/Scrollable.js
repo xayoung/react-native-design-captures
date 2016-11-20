@@ -16,19 +16,27 @@ import {
 import FacebookTabBar from './FacebookTabBar';
 import ScrollableTabView from 'react-native-scrollable-tab-view';
 
-var ShotList = require("./ShotList");
+var ShotList = require("./Dribbble/ShotList");
+var ProjectsList = require("./Behance/ProjectsList");
 
 
 class Scrollable extends Component {
     render() {
+
+
         return (
         <ScrollableTabView
-            style={{marginTop: 20, }}
-            initialPage={1}
+            style={{paddingTop: 20}}
+            initialPage={0}
             renderTabBar={() => <FacebookTabBar />}
         >
             <ShotList
-                tabLabel="ios-paper"
+                tabLabel='dribbble'
+                navigator={this.props.navigator}
+            />
+
+            <ProjectsList
+                tabLabel='behance'
                 navigator={this.props.navigator}
             />
 

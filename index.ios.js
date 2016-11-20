@@ -17,18 +17,14 @@ import {
 
 
 
-var ShotList = require("./comment/ShotList");
+var ShotList = require("./comment/Dribbble/ShotList");
 var ScrollableView = require("./comment/Scrollable");
 
 class Designer extends Component {
   render() {
     return (
-
-
-
         <Navigator
-            tabLabel="ios-paper"
-            initialRoute={{name:'首页',component:ScrollableView}}
+            initialRoute={{component:ScrollableView}}
             configureScene={()=>{
                 return Navigator.SceneConfigs.PushFromRight;
             }}
@@ -37,8 +33,6 @@ class Designer extends Component {
                 return <Component {...route.passProps} navigator={navigator}/>;
             }}
         />
-
-
     );
   }
 }

@@ -9,7 +9,7 @@ import {
   Dimensions
 } from 'react-native';
 
-var getImage = require("./getImage"),
+var getImage = require("./../getImage"),
     screen = Dimensions.get('window');
 
 var ShotCell = React.createClass({
