@@ -46,9 +46,11 @@ Plugins used:
 - Clone this repo `git@github.com:xayoung/react-native-design-captures.git`
 - `cd react-native-design-captures`
 - run `npm install`
+
 iOS:
 - Open `Designer.xcodeproj` in `XCode`
 - Press `cmd+r` to build it
+
 Android:
 - run `react-native run-android`
 
